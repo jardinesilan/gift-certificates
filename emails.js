@@ -49,3 +49,18 @@ export function recipientSubject({ amountCents, recipientName, paymentMethod }) 
 export function buyerSubject({ paymentMethod }) {
   return `${paymentMethod === "venmo" ? "[VENMO RECEIPT] " : ""}Thank you for your Unidamassage gift purchase`;
 }
+
+export function ownerSubject({ amountCents, buyerName, code }) {
+  const safeName = String(buyerName).replace(/[\r\n]+/g, " ").trim();
+  return `Gift sale ${money(amountCents)} — ${safeName} (code ${code})`;
+}
+
+export function ownerEmailHtml({ amountCents, tipAmountCents, buyerName, buyerEmail, recipientName, recipientEmail, message, code, paymentMethod, paymentRef, saleNumber }) {
+  const totalCents = amountCents + tipAmountCents;
+  const row = (k, v) => `<div style="display:flex;justify-content:space-between;gap:16px;padding:7px 0;border-bottom:1px solid #eee"><span style="color:#647679">${k}</span><strong style="color:#244347;text-align:right">${v}</strong></div>`;
+  const note = message
+    ? `<div style="margin-top:12px;padding:12px 14px;background:#fff8f5;border-radius:8px;color:#244347;font-style:italic">&ldquo;${escapeHtml(message)}&rdquo;</div>`
+    : "";
+  const paymentLabel = paymentMethod === "venmo" ? "Venmo (buyer confirmed)" : "SumUp card (verified)";
+  return `<div style="margin:0;padding:24px;background:#f7f7f7;font-family:Arial,sans-serif;color:#244347"><div style="max-width:620px;margin:0 auto;background:#ffffff;border-radius:12px;padding:24px"><div style="font:bold 18px Georgia,serif">New gift certificate sale</div><div style="margin:6px 0 16px;color:#647679;font-size:13px">Your store just sold a gift certificate. Details for your records:</div>${row("Gift code", `<span style="font-family:monospace;letter-spacing:.1em">${escapeHtml(code)}</span>`)}${row("Gift value", money(amountCents))}${row("Tip", money(tipAmountCents))}${row("Total charged", money(totalCents))}${row("Payment", paymentLabel)}${row("Reference", escapeHtml(paymentRef || "—"))}${row("Buyer", `${escapeHtml(buyerName)} &lt;${escapeHtml(buyerEmail)}&gt;`)}${row("Recipient", `${escapeHtml(recipientName)} &lt;${escapeHtml(recipientEmail)}&gt;`)}${row("Sale #", escapeHtml(String(saleNumber ?? "—")))}${note}<p style="margin:16px 0 0;color:#647679;font-size:12px">Use the gift code above to register this sale in Owner Tools.</p></div></div>`;
+}

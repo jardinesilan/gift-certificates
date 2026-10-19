@@ -34,6 +34,8 @@ import {
   buyerReceiptHtml,
   recipientSubject,
   buyerSubject,
+  ownerEmailHtml,
+  ownerSubject,
 } from "./emails.js";
 import { createCheckout, getCheckout } from "./sumup.js";
 import { sendMail } from "./mailer.js";
@@ -131,6 +133,31 @@ async function issueCertificate({ serviceId, paymentMethod, input, paymentRef, s
     });
     try {
       const result = await sendMail({ to: job.email, subject: job.subject, html: job.html });
+      updateEmailDelivery(deliveryId, result.ok ? "sent" : "failed", result.ok ? null : result.detail);
+    } catch (err) {
+      updateEmailDelivery(deliveryId, "failed", String(err?.message ?? err).slice(0, 200));
+    }
+  }
+  // Owner copy: Ela gets every sale in her inbox (set OWNER_EMAIL in Railway variables).
+  const ownerEmail = (process.env.OWNER_EMAIL || "").trim();
+  if (ownerEmail) {
+    const deliveryId = insertEmailDelivery({
+      certificate_id: certId,
+      recipient_type: "owner",
+      email: ownerEmail,
+      status: "queued",
+    });
+    try {
+      const result = await sendMail({
+        to: ownerEmail,
+        subject: ownerSubject({ amountCents, buyerName: input.buyer_name, code }),
+        html: ownerEmailHtml({
+          ...emailArgs,
+          buyerEmail: input.buyer_email,
+          recipientEmail: input.recipient_email,
+          paymentRef,
+        }),
+      });
       updateEmailDelivery(deliveryId, result.ok ? "sent" : "failed", result.ok ? null : result.detail);
     } catch (err) {
       updateEmailDelivery(deliveryId, "failed", String(err?.message ?? err).slice(0, 200));
